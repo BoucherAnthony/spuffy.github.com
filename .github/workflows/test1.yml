@@ -44,10 +44,7 @@ jobs:
         if: failure()
         with:
           branch: master
-          title: 'Conflits on merge master to staging'      - name: Reset prod branch
-        run: |
-          git fetch origin master:master
-          git reset --hard master
+          title: 'Conflits on merge master to staging'
           body: 'En error occured when merging master to staging, please fix it ASAP'
           labels: 'To Staging'
           assignees: ${{ github.actor }}
