@@ -11,26 +11,45 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: staging  
-      - name: merge master to staging
+          ref: staging
+
+      - name: set env
+        id: setEmv
+        run: |
+          git config --global user.email "anthony.boucher@partoo.com"
+          git config --global user.name "anthony"
+
+      - name: Reset prod branch
+        run: |
+          git fetch origin master:master
+          git reset --hard master
+
+      - name: Merge master to staging
         id: mergeMaster
         run: |
-          git merge master
-          echo '::set-output name=mergeResult::$?'
+          git merge origin/master --allow-unrelated-histories
       - name: Push merge to staging
         id: mergeSuccess
-        if: ${{ steps.vars.outputs.mergeResult == 0 }}
+        if: success()
         run: |
           git push origin staging
       - name: Abort merge + send slack notif
         id: mergeFailure
-        if: ${{ steps.vars.outputs.mergeResult == 1 }}
+        if: failure()
         run: |
           git merge --abort
           git reset --hard staging
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        if: failure()
+        with:
+          branch: master
+          title: 'Conflits on merge master to staging'
+          body: 'En error occured when merging master to staging, please fix it ASAP'
+          labels: 'To Staging'
+          assignees: ${{ github.actor }}
       - name: Notify on slack
         id: slackNotif
-        if: ${{ steps.vars.outputs.mergeResult == 1 }}
+        if: failure()
         run: |
-          echo Notify slack
-
+          echo "Notify Slack"
