@@ -1,0 +1,36 @@
+name: Merge master to staging
+
+on:
+  push:
+    branches: 
+     - master
+
+jobs:
+  merge-master-to-staging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: staging  
+      - name: merge master to staging
+        id: mergeMaster
+        run: |
+          git merge master
+          echo '::set-output name=mergeResult::$?'
+      - name: Push merge to staging
+        id: mergeSuccess
+        if: ${{ steps.vars.outputs.mergeResult == 0 }}
+        run: |
+          git push origin staging
+      - name: Abort merge + send slack notif
+        id: mergeFailure
+        if: ${{ steps.vars.outputs.mergeResult == 1 }}
+        run: |
+          git merge --abort
+          git reset --hard staging
+      - name: Notify on slack
+        id: slackNotif
+        if: ${{ steps.vars.outputs.mergeResult == 1 }}
+        run: |
+          echo Notify slack
+
